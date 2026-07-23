@@ -1,0 +1,61 @@
+\documentclass[12pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{hyperref}
+
+\hypersetup{colorlinks=true,linkcolor=blue,urlcolor=blue}
+
+\begin{document}
+
+\begin{flushright}
+Yaoping Wang\\
+Department of Statistics, Rutgers University\\
+Piscataway, NJ, USA\\
+yw1580@scarletmail.rutgers.edu\\
+\end{flushright}
+
+\vspace{2em}
+
+\begin{flushleft}
+Editor-in-Chief\\
+\textit{International Journal of Data Science and Analytics}\\
+Springer
+\end{flushleft}
+
+\vspace{1em}
+
+Dear Editor,
+
+\vspace{1em}
+
+I am pleased to submit the manuscript \textbf{``A Resolution Framework for Finite-Sample Model Selection''} for consideration as a regular paper in the \textit{International Journal of Data Science and Analytics}.
+
+\paragraph{The problem.}
+Model selection across data science follows one default rule: evaluate candidates on a held-out set and keep the best score. This tacitly assumes that 55\% is genuinely better than 52\%. Whether that assumption holds is a property of the evaluation budget, not of the models---yet it is almost never checked before evaluation resources are committed. Existing tools (paired $t$-tests, significance guidelines, post-selection inference) are post-hoc: they diagnose the problem only after the experiment is complete.
+
+\paragraph{The contribution.}
+I develop $\Delta_{\min}$, a pre-experimental resolution diagnostic that returns the smallest performance gap a given budget $N$ can distinguish, requiring only $N$ and an approximate accuracy level. Around this threshold the paper builds an operational protocol: a decision rule for which I prove the exact condition under which uniform model averaging dominates argmax selection in expected regret; bootstrap and Monte Carlo calibration linking the threshold to conventional 80\% and 95\% power; an extension to continuous metrics via the Delta method; a catalog of nine reproducible diagnostic pitfalls; and a one-page quick-reference table.
+
+I am explicit in the manuscript that the underlying expression is classical power analysis. The contribution is its conversion into a validated pre-experimental protocol, and the empirical demonstration that the protocol discriminates rather than uniformly flagging noise: at an identical budget ($N = 200$) it classifies one configuration as resolvable (observed range 10.5~pp against a threshold of 8.11~pp) and another as not.
+
+\paragraph{Generality and honesty about limits.}
+Validation spans fine-tuning of two model families across multiple seeds, scales and training paradigms; classical supervised learning (random forests on MNIST); and controlled synthetic simulation. An exploratory survey of 36 recent papers indicates that 71\% of reported improvements fall below the resolution implied by their own evaluation budgets. The paper also reports a case from its own experiments in which the diagnostic fails silently---a near-floor accuracy regime where the normal approximation breaks down and the threshold manufactures apparent resolvability---together with the operational guard that prevents it. A diagnostic that never reports its own inapplicability is of limited use to a practitioner, and I would rather delimit the framework than oversell it.
+
+\paragraph{Fit with JDSA.}
+The work sits within the journal's remit of statistical and mathematical foundations for data science and analytics, and matches its transdisciplinary orientation: the diagnostic is model- and metric-agnostic, and I deliberately demonstrate it outside deep learning to establish that the limitation is a property of finite evaluation rather than an artifact of any one model class. It is also written to be usable---a lookup table and an open-source implementation let a reader run the check before committing an evaluation budget.
+
+\paragraph{Declarations.}
+The manuscript is original, has not been published previously, and is not under consideration elsewhere. I am the sole author. I declare no competing interests and received no funding for this work. All code and data supporting the findings, including the full literature-survey extraction table, are openly available at \url{https://github.com/wyp629929/A-Resolution-Framework-for-Finite-Sample-Model-Selection}.
+
+\vspace{2em}
+
+Thank you for your time and consideration.
+
+\vspace{1em}
+
+Sincerely,
+
+\vspace{2em}
+
+Yaoping Wang
+
+\end{document}
