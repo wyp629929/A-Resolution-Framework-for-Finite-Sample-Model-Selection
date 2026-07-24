@@ -22,13 +22,13 @@
 
 \begin{document}
 
-\title[A Resolution Framework]{A Resolution Framework for Finite-Sample Model Selection}
+\title[Protocol-Dependent Model Selection]{Protocol-Dependent Resolution in Finite-Sample Model Selection}
 
 \author{Yaoping Wang}
 \affil{Department of Statistics, Rutgers University, Piscataway, NJ, USA}
 \email{yw1580@scarletmail.rutgers.edu}
 
-\abstract{A single decoding parameter---the maximum generation length---can reverse whether a set of model checkpoints is classified as distinguishable or indistinguishable, and can conceal a statistically significant overfitting trend ($\rho=-0.77$, $p=0.009$) behind a facade of flat performance. We document this through controlled LoRA fine-tuning experiments (Qwen2.5-7B, Mistral-7B) in which increasing the generation length from $128$ to $256$~tokens shifts observed accuracy ranges by $2.3\times$, flips resolvability verdicts, and reveals that the earliest checkpoint is systematically best---a pattern invisible under the shorter limit. The mechanism is truncated chain-of-thought reasoning: a short generation limit compresses between-checkpoint variance, manufacturing false negatives for the $\Delta_{\min}$ diagnostic (a resolution threshold derived from classical power analysis). We survey 50 recent fine-tuning papers and find that none report the generation length parameter that we show can determine the verdict. The protocol sensitivity of evaluation resolution means that no model comparison claim is interpretable unless the evaluation pipeline is fully specified. A catalogue of nine diagnostic pitfalls encountered during our own research process, a practitioner quick-reference table for $\Delta_{\min}$, and a continuous-metric extension via the Delta method accompany the analysis.}
+\abstract{A single decoding parameter---the maximum generation length---can reverse whether a set of model checkpoints is classified as distinguishable or indistinguishable, and can conceal a strong overfitting trend ($\rho=-0.77$) behind a facade of flat performance. We document this through controlled LoRA fine-tuning experiments (Qwen2.5-7B, Mistral-7B) in which increasing the generation length from $128$ to $256$~tokens shifts observed accuracy ranges by $2.3\times$, flips pairwise resolution verdicts, and reveals that the earliest checkpoint is systematically best---a pattern invisible under the shorter limit. The mechanism is truncated chain-of-thought reasoning: a short generation limit compresses between-checkpoint variance, manufacturing false negatives for $\Delta_{\min}$, the minimum detectable effect at $50\%$ power (MDE$_{50}$) for a two-proportion $z$-test. We show that this threshold is a conservative lower bound on evaluation resolution, not a sufficient-power standard. A survey of 50 recent fine-tuning papers finds that none report the generation length parameter that our experiments show can determine the verdict. The protocol sensitivity of evaluation resolution means that no model comparison claim is interpretable unless the evaluation pipeline is fully specified. A catalogue of nine diagnostic pitfalls encountered during our own research process, a practitioner quick-reference table for $\Delta_{\min}$, and a continuous-metric extension via the Delta method accompany the analysis.}
 
 \keywords{Model selection, evaluation budget, statistical resolution, statistical power, $\Delta_{\min}$, evaluation methodology, reproducibility}
 
@@ -81,7 +81,7 @@ All primary experiments use Qwen2.5-7B-Instruct~\citep{qwen2024qwen2} with LoRA~
 \section{The $\Delta_{\min}$ Framework}\label{sec:framework}
 % ============================================================
 
-\noindent\textbf{Why a resolution threshold is needed.} Classical hypothesis testing answers a post-hoc question: ``given the data, is model A better than model B?'' Model selection requires a different question: ``before investing in evaluation, does this budget have enough resolution to make ranking meaningful?'' We are not proposing a new significance test but a pre-selection diagnostic.
+\noindent\textbf{Why a resolution threshold is needed.} Classical hypothesis testing answers a post-hoc question: ``given the data, is model A better than model B?'' Model selection requires a different question: ``before investing in evaluation, does this budget have enough resolution to make ranking meaningful?'' We are not proposing a new significance test but a pre-selection diagnostic. The thresholds we report are minimum detectable effects at $50\%$ power (MDE$_{50}$), which provide a conservative lower bound on evaluation resolution---a benchmark for screening, not a guarantee of sufficient power.
 
 \noindent\textbf{Definition.} Because the same evaluation questions are used at every checkpoint, the natural comparison is paired. The minimum detectable difference is therefore given by the McNemar-based paired test ($\alpha=0.05$). Let $D_i = I(\hat y_{i1}=y_i) - I(\hat y_{i2}=y_i)$ be the per-question correctness difference between two candidate models. Under the null hypothesis of equal accuracy, the discordant proportion $p_d = P(D_i \neq 0)$ captures the effective variance, giving:
 \begin{equation}
@@ -95,7 +95,7 @@ A limitation of the paired version is that it requires per-sample predictions fr
 \Delta_{\min}^{\text{(indep)}} = z_{\alpha/2} \cdot \sqrt{ \frac{2 \bar{p} (1 - \bar{p})}{N} }
 \label{eq:delta_min}
 \end{equation}
-Equation~(\ref{eq:delta_min}) is the standard minimum detectable effect for a two-proportion $z$-test~\citep{cohen1988statistical}, restated as a pre-experimental resolution diagnostic. The independent version assumes no shared variance, so it overstates the true threshold when checkpoints agree on many examples. Throughout this paper, all reported $\Delta_{\min}$ values use Eq.~\eqref{eq:delta_min} (the conservative bound). Any practitioner can compute this from $N$ and $\bar{p}$ alone. Where per-sample predictions are available, we also report the tighter paired thresholds. Equation~(\ref{eq:delta_min}) gives approximately $50\%$ power; an $80\%$ target would require $\Delta_{\min}^{(80\%)}=14.0$~pp at $N=200$, $\bar{p}=0.5$.
+Equation~(\ref{eq:delta_min}) is the standard minimum detectable effect for a two-proportion $z$-test~\citep{cohen1988statistical}, restated as a pre-experimental resolution diagnostic. The independent version assumes no shared variance, so it overstates the true threshold when checkpoints agree on many examples. Throughout this paper, all reported $\Delta_{\min}$ values use Eq.~\eqref{eq:delta_min} (the conservative bound). Any practitioner can compute this from $N$ and $\bar{p}$ alone. Where per-sample predictions are available, we also report the tighter paired thresholds. Equation~(\ref{eq:delta_min}) gives approximately $50\%$ power; we therefore refer to it as MDE$_{50}$. An $80\%$ power target would require $\Delta_{\min}^{(80\%)}=14.0$~pp at $N=200$, $\bar{p}=0.5$. Throughout this paper, ``resolvable'' means that the observed gap exceeds the $50\%$-power threshold (MDE$_{50}$)---a screening criterion, not a fully powered confirmatory test. The $80\%$-power threshold is $1.43\times$ larger.
 
 \noindent\textbf{Paired vs.\ independent.} Because all candidate models are evaluated on the same test questions, the per-model accuracy estimates are paired, not independent. The paired (McNemar-based) $\Delta_{\min}^{\text{(paired)}}$ in Eq.~\eqref{eq:delta_min_paired} is the exact threshold for this setting. For typical model comparisons where checkpoints agree on most examples, the discordant proportion $p_d$ is substantially smaller than $2\bar{p}(1-\bar{p})$, making Eq.~\eqref{eq:delta_min} a conservative upper bound. As an illustration, at $N=200$ with $\bar{p}\approx0.5$, the independent bound gives $\Delta_{\min}=9.8$~pp, while the paired threshold for a typical checkpoint pair (discordant proportion $p_d\approx0.35$) gives $\Delta_{\min}^{\text{(paired)}}\approx9.1$~pp, a $7\%$ reduction. We report the conservative independent version throughout the main text, as it is the appropriate diagnostic for the pre-experimental use case; for completeness, Appendix~\ref{app:paired} provides a detailed comparison of paired and independent thresholds for all experimental comparisons.
 
@@ -225,7 +225,7 @@ At the full test set ($N=1319$), $\Delta_{\min}=3.8$~pp exceeds the observed ran
 
 \subsection{Seed Replication}\label{sec:seeds}
 
-Two additional random seeds (43,~44) were trained. Under the $128$-token training-format evaluation (Table~\ref{tab:seed_rep}), seed~43 has range $5.0$~pp and seed~44 has range $3.0$~pp, both below $\Delta_{\min}=9.8$~pp. However, as Section~\ref{sec:adaptive} documents, these ranges are compressed by token truncation. At $256$~tokens, all three seeds become resolvable: seed~43 has range $14.0$~pp and seed~44 has range $13.5$~pp, both exceeding $\Delta_{\min}$. Critically, the $256$-token data reveal a pattern that the $128$-token evaluation entirely masked: seeds~43 and~44 show significant negative trends (Spearman $\rho=-0.77$, $p=0.009$ and $\rho=-0.63$, $p=0.050$ respectively), with the earliest checkpoint (step~50) outperforming the last by $12.5$~pp and $10.5$~pp (best-vs-worst $z=2.82$, $p=0.005$ and $z=2.33$, $p=0.020$). This is evidence of overfitting after the initial learning phase, a pattern that is invisible under a generation limit that truncates the model's output. Seed~42 does not share this trend ($\rho=+0.29$, $p=0.43$), confirming that protocol sensitivity and overfitting susceptibility are trajectory-specific as well as model-specific.
+Two additional random seeds (43,~44) were trained. Under the $128$-token training-format evaluation (Table~\ref{tab:seed_rep}), seed~43 has range $5.0$~pp and seed~44 has range $3.0$~pp, both below $\Delta_{\min}=9.8$~pp. However, as Section~\ref{sec:adaptive} documents, these ranges are compressed by token truncation. At $256$~tokens, all three seeds become resolvable: seed~43 has range $14.0$~pp and seed~44 has range $13.5$~pp, both exceeding $\Delta_{\min}$. Critically, the $256$-token data reveal a pattern that the $128$-token evaluation entirely masked: seeds~43 and~44 show negative trends (Spearman $\rho=-0.77$, $p=0.009$ and $\rho=-0.63$, $p=0.050$ respectively; Holm-Bonferroni-corrected threshold $\alpha=0.0050$), with the earliest checkpoint (step~50) outperforming the last by $12.5$~pp and $10.5$~pp. This is evidence suggestive of overfitting after an initial learning phase, though we caution that these correlations are estimated from $n=10$ checkpoints per seed and are driven in part by the high accuracy at step~50. The pattern is invisible under a generation limit that truncates the model's output. Seed~42 does not share this trend ($\rho=+0.29$, $p=0.43$), confirming that protocol sensitivity and overfitting susceptibility are trajectory-specific.
 
 \subsection{Smaller Model Scale: A Case Where the Diagnostic Fails}\label{sec:small_scale}
 
@@ -282,23 +282,23 @@ Table~\ref{tab:all_settings} collects every experimental setting reported in \S\
 
 \begin{table}[t]
 \centering
-\caption{Consolidated view of all experimental settings. Ranges and thresholds in percentage points; $\Delta_{\min}$ is the conservative independent bound of Eq.~\eqref{eq:delta_min} computed at the $\bar{p}$ observed in each setting. Paired thresholds for the primary settings appear in Appendix~\ref{app:paired}.}
+\caption{Consolidated view of all experimental settings. Ranges and thresholds in percentage points; $\Delta_{\min}$ is the conservative independent bound of Eq.~\eqref{eq:delta_min} (MDE$_{50}$) computed at the $\bar{p}$ observed in each setting. Paired thresholds for the primary settings appear in Appendix~\ref{app:paired}. The Pairwise column uses the $m=10$ Holm-Bonferroni-corrected threshold for the best-vs-worst comparison; seeds 43 and 44 remain resolvable under this correction, seed 42 does not. The Multiplicity column uses the all-pairwise threshold ($m=45$); details in \S\ref{sec:framework}.}
 \label{tab:all_settings}
 \footnotesize
 \setlength{\tabcolsep}{4pt}
-\begin{tabular}{llcrrrrl}\toprule
-\textbf{\S} & \textbf{Setting} & \textbf{Protocol} & $\bm{N}$ & \textbf{Range} & $\bm{\Delta_{\min}^{\text{(indep)}}}$ & $\bm{\Delta_{\min}^{\text{(paired)}}}$ & \textbf{Verdict} \\\midrule
-\ref{sec:full_budget} & Qwen2.5-7B LoRA, GSM8K full & training & 1319 & 3.0 & 3.8 & 2.9--3.5 & Not resolvable \\
-\ref{sec:budget_degradation} & Qwen2.5-7B LoRA, GSM8K sub. & few-shot & 200 & 8.0 & 9.8 & --- & Not resolvable \\
-\ref{sec:budget_degradation} & Qwen2.5-7B LoRA, seed 42 (128~tok) & training & 200 & 5.5 & 9.8 & 8.7--9.3 & Not resolvable \\
-\ref{sec:seeds} & Qwen2.5-7B LoRA, seed 42 (256~tok) & training & 200 & 12.5 & 9.7 & 8.7--9.3 & Resolvable \\
-\ref{sec:seeds} & Qwen2.5-7B LoRA, seed 43 (256~tok) & training & 200 & 14.0 & 9.1 & --- & Resolvable \\
-\ref{sec:seeds} & Qwen2.5-7B LoRA, seed 44 (256~tok) & training & 200 & 13.5 & 9.1 & --- & Resolvable \\
-\ref{sec:small_scale} & Qwen2.5-1.5B LoRA & zero-shot & 200 & 3.5 & 3.4 & --- & \emph{Diagnostic invalid} \\
-\ref{sec:full_ft} & Qwen2.5-1.5B full fine-tune & training & 200 & 6.0 & 9.4 & --- & Not resolvable \\
-\ref{sec:mistral} & Mistral-7B LoRA & training & 200 & 11.0 & 8.8 & 7.2--7.9 & \textbf{Resolvable} \\
-\ref{sec:mmlu} & Qwen2.5-7B, MMLU (5 subdomains) & --- & $\approx$250 & 6.4 & 8.8 & --- & Not resolvable \\
-\ref{sec:mnist} & MNIST random forest & --- & 5000 & --- & 1.4 & 1.1--1.3 & See Table~\ref{tab:mnist} \\
+\begin{tabular}{llcrrrrll}\toprule
+\textbf{\S} & \textbf{Setting} & \textbf{Protocol} & $\bm{N}$ & \textbf{Range} & $\bm{\Delta_{\min}^{\text{(indep)}}}$ & $\bm{\Delta_{\min}^{\text{(paired)}}}$ & \textbf{Pairwise} & \textbf{Multiplicity} \\\midrule
+\ref{sec:full_budget} & Qwen2.5-7B LoRA, GSM8K full & training & 1319 & 3.0 & 3.8 & 2.9--3.5 & --- & --- \\
+\ref{sec:budget_degradation} & Qwen2.5-7B LoRA, GSM8K sub. & few-shot & 200 & 8.0 & 9.8 & --- & Not resolvable & --- \\
+\ref{sec:budget_degradation} & Qwen2.5-7B LoRA, seed 42 (128~tok) & training & 200 & 5.5 & 9.8 & 8.7--9.3 & Not resolvable & --- \\
+\ref{sec:seeds} & Qwen2.5-7B LoRA, seed 42 (256~tok) & training & 200 & 12.5 & 9.7 & 8.7--9.3 & Resolvable & Not resolvable \\
+\ref{sec:seeds} & Qwen2.5-7B LoRA, seed 43 (256~tok) & training & 200 & 14.0 & 9.1 & --- & Resolvable & Resolvable \\
+\ref{sec:seeds} & Qwen2.5-7B LoRA, seed 44 (256~tok) & training & 200 & 13.5 & 9.1 & --- & Resolvable & Not resolvable \\
+\ref{sec:small_scale} & Qwen2.5-1.5B LoRA & zero-shot & 200 & 3.5 & 3.4 & --- & \emph{Invalid} & --- \\
+\ref{sec:full_ft} & Qwen2.5-1.5B full fine-tune & training & 200 & 6.0 & 9.4 & --- & Not resolvable & --- \\
+\ref{sec:mistral} & Mistral-7B LoRA & training & 200 & 11.0 & 8.8 & 7.2--7.9 & \textbf{Resolvable} & \textbf{Resolvable} \\
+\ref{sec:mmlu} & Qwen2.5-7B, MMLU (5 subdomains) & --- & $\approx$250 & 6.4 & 8.8 & --- & Not resolvable & --- \\
+\ref{sec:mnist} & MNIST random forest & --- & 5000 & --- & 1.4 & 1.1--1.3 & See Table~\ref{tab:mnist} & --- \\
 \bottomrule
 \end{tabular}
 \end{table}
