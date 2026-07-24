@@ -28,7 +28,7 @@
 \affil{Department of Statistics, Rutgers University, Piscataway, NJ, USA}
 \email{yw1580@scarletmail.rutgers.edu}
 
-\abstract{A single decoding parameter---the maximum generation length---can reverse whether a set of model checkpoints is classified as distinguishable or indistinguishable, and can conceal a strong overfitting trend ($\rho=-0.77$) behind a facade of flat performance. We document this through controlled LoRA fine-tuning experiments (Qwen2.5-7B, Mistral-7B) in which increasing the generation length from $128$ to $256$~tokens shifts observed accuracy ranges by $2.3\times$, flips pairwise resolution verdicts, and reveals that the earliest checkpoint is systematically best---a pattern invisible under the shorter limit. The mechanism is truncated chain-of-thought reasoning: a short generation limit compresses between-checkpoint variance, manufacturing false negatives for $\Delta_{\min}$, the minimum detectable effect at $50\%$ power (MDE$_{50}$) for a two-proportion $z$-test. We show that this threshold is a conservative lower bound on evaluation resolution, not a sufficient-power standard. A survey of 50 recent fine-tuning papers finds that none report the generation length parameter that our experiments show can determine the verdict. The protocol sensitivity of evaluation resolution means that no model comparison claim is interpretable unless the evaluation pipeline is fully specified. A catalogue of nine diagnostic pitfalls encountered during our own research process, a practitioner quick-reference table for $\Delta_{\min}$, and a continuous-metric extension via the Delta method accompany the analysis.}
+\abstract{A single decoding parameter---the maximum generation length---can reverse whether a set of model checkpoints is classified as distinguishable or indistinguishable, and can conceal a strong negative trend in one seed ($\rho=-0.77$) behind a facade of flat performance. We document this through controlled LoRA fine-tuning experiments (Qwen2.5-7B, Mistral-7B) in which increasing the generation length from $128$ to $256$~tokens shifts observed accuracy ranges by $2.3\times$, flips pairwise resolution verdicts, and reveals a negative trend in two of three seeds---a pattern invisible under the shorter limit. The mechanism is truncated chain-of-thought reasoning: a short generation limit compresses between-checkpoint variance, manufacturing false negatives for $\Delta_{\min}$, the minimum detectable effect at $50\%$ power (MDE$_{50}$) for a two-proportion $z$-test. We show that this threshold is a conservative lower bound on evaluation resolution, not a sufficient-power standard. A survey of 50 recent fine-tuning papers finds that none report the generation length parameter that our experiments show can determine the verdict. The protocol sensitivity of evaluation resolution means that no model comparison claim is interpretable unless the evaluation pipeline is fully specified. A catalogue of nine diagnostic pitfalls encountered during our own research process, a practitioner quick-reference table for $\Delta_{\min}$, and a continuous-metric extension via the Delta method accompany the analysis.}
 
 \keywords{Model selection, evaluation budget, statistical resolution, statistical power, $\Delta_{\min}$, evaluation methodology, reproducibility}
 
@@ -276,7 +276,7 @@ Whether a continuous metric helps is therefore an empirical question about signa
 
 \subsection{Consolidated View of All Settings}\label{sec:consolidated}
 
-Table~\ref{tab:all_settings} collects every experimental setting reported in \S\ref{sec:primary} and \S\ref{sec:robustness} with its evaluation protocol, budget, observed range, threshold and verdict. The same Qwen2.5-7B checkpoints appear five times at $N=200$ under different protocols: the few-shot evaluation (range $8.0$~pp), the $128$-token training-format evaluation ($5.5$~pp), and three $256$-token training-format evaluations showing all three seeds resolvable ($12.5$, $14.0$, $13.5$~pp). The $2.5$--$9.0$~pp discrepancy between protocols---driven by a single decoding parameter (\S\ref{sec:protocol_sensitivity})---is itself larger than several of the between-checkpoint differences the field routinely reports as improvements. Under the uncorrected MDE$_{50}$, four of eleven settings are resolvable under the $256$-token protocol; under the all-pairwise Bonferroni correction ($m=45$), none are. This gap between the screening criterion and the multiplicity-corrected threshold illustrates how sharply the verdict depends on what standard of evidence is required---a dependence that is invisible when the evaluation protocol itself is unspecified.
+Table~\ref{tab:all_settings} collects every experimental setting reported in \S\ref{sec:primary} and \S\ref{sec:robustness} with its evaluation protocol, budget, observed range, threshold and verdict. The same Qwen2.5-7B checkpoints appear five times at $N=200$ under different protocols: the few-shot evaluation (range $8.0$~pp), the $128$-token training-format evaluation ($5.5$~pp), and three $256$-token training-format evaluations showing all three seeds resolvable under the MDE$_{50}$ screening criterion ($12.5$, $14.0$, $13.5$~pp). The $2.5$--$9.0$~pp discrepancy between protocols---driven by a single decoding parameter (\S\ref{sec:protocol_sensitivity})---is itself larger than several of the between-checkpoint differences the field routinely reports as improvements. Under the uncorrected MDE$_{50}$, four of eleven settings are resolvable under the $256$-token protocol; under the all-pairwise Bonferroni correction ($m=45$), none are. This gap between the screening criterion and the multiplicity-corrected threshold illustrates how sharply the verdict depends on what standard of evidence is required---a dependence that is invisible when the evaluation protocol itself is unspecified.
 
 \begin{table}[t]
 \centering
@@ -305,7 +305,7 @@ Table~\ref{tab:all_settings} collects every experimental setting reported in \S\
 \section{Literature Survey: Evaluation Pipeline Reporting}\label{sec:survey}
 % ============================================================
 
-To assess whether the protocol-sensitivity problem documented in \S\ref{sec:protocol_sensitivity} extends beyond our controlled experiments, we surveyed recent (2024--2026) LLM fine-tuning papers for reporting of the generation length parameter---the specific parameter that flips the resolvability verdict in our experiments.
+To assess whether the protocol-sensitivity problem documented in \S\ref{sec:protocol_sensitivity} extends beyond our controlled experiments, we surveyed recent (2024--2026) LLM fine-tuning papers for reporting of the generation length parameter---the specific parameter that flips the pairwise MDE$_{50}$ resolution verdict in our experiments.
 
 \subsection{Methodology}
 
@@ -313,7 +313,7 @@ The search query ``LoRA'' OR ``fine-tuning'' combined with a named benchmark (GS
 
 \subsection{Results}
 
-None of the 50 surveyed papers report the maximum generation length used during evaluation. A few state that they used greedy decoding or ``default'' generation settings, but none specify the token budget. The 95\% Wilson confidence interval for this proportion is [$0\%$, $7.1\%$] (computed under simple random sampling; the convenience sample design means this should be read as a descriptive lower bound rather than a precise population estimate). This gap is consistent with the hypothesis that the evaluation pipeline---including the decoding configuration---is treated as an interchangeable constant across comparisons, when in fact a single unreported parameter can reverse the resolvability verdict.
+None of the 50 surveyed papers report the maximum generation length used during evaluation. A few state that they used greedy decoding or ``default'' generation settings, but none specify the token budget. The 95\% Wilson confidence interval for this proportion is [$0\%$, $7.1\%$] (computed under simple random sampling; the convenience sample design means this should be read as a descriptive lower bound rather than a precise population estimate). This gap is consistent with the hypothesis that the evaluation pipeline---including the decoding configuration---is treated as an interchangeable constant across comparisons, when in fact a single unreported parameter can reverse the pairwise MDE$_{50}$ resolution verdict.
 
 % ============================================================
 
@@ -529,7 +529,7 @@ For a pair of checkpoints with per-sample correctness indicators $\hat y_{i1}$ a
 \Delta_{\min}^{\text{(paired)}} = z_{0.975} \sqrt{\frac{p_d}{N}}.
 \]
 
-Table~\ref{tab:paired_vs_indep} shows the comparison for the two primary experimental settings.
+Table~\ref{tab:paired_vs_indep} shows the comparison for the settings with available per-sample predictions.
 
 \begin{table}[h]
 \centering
