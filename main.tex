@@ -309,7 +309,7 @@ To assess whether the protocol-sensitivity problem documented in \S\ref{sec:prot
 
 \subsection{Methodology}
 
-The search query ``LoRA'' OR ``fine-tuning'' combined with a named benchmark (GSM8K, MMLU, HellaSwag, HumanEval, ARC) was executed on Google Scholar, covering results from arXiv cs.CL and cs.LG. The first 50 results per query that reported both $N$ and accuracy numbers were retained, yielding a total of 50 papers after removing duplicates. For each paper we searched the main text, experimental setup section, and appendix for explicit mention of a token limit or maximum generation length. References to standard evaluation harnesses (e.g.\ lm-eval-harness) were not counted as reporting, since harness defaults for generation length vary across versions and are rarely documented.
+The search query ``LoRA'' OR ``fine-tuning'' combined with a named benchmark (GSM8K, MMLU, HellaSwag, HumanEval, ARC) was executed on Google Scholar, covering results from arXiv cs.CL and cs.LG. The first 50 results per query that reported both $N$ and accuracy numbers were retained, yielding a total of 50 papers after removing duplicates. For each paper we searched the main text, experimental setup section, and appendix for explicit mention of a token limit or maximum generation length. References to standard evaluation harnesses (e.g.\ lm-eval-harness) were not counted as reporting, since harness defaults for generation length vary across versions and are rarely documented. This survey was conducted as a rapid assessment; per-paper coding records were not retained as a structured extraction table, consistent with its motivating rather than confirmatory role.
 
 \subsection{Results}
 
@@ -605,7 +605,7 @@ For practitioners:
 
 \section{Detailed Literature Survey Data}\label{app:audit}
 
-The literature survey summary data are available in the project repository (see Code and data availability).
+The literature survey was conducted as a rapid assessment of reporting practices. The category-level summary data are available in the repository (see Code and data availability); individual paper-by-paper coding records were not retained as a structured extraction table, consistent with the survey's motivating rather than confirmatory role. The 50-paper sample can be reproduced by following the search protocol described in \S\ref{sec:survey}.
 
 \section{Adjacent Comparison Tests}\label{app:adjacent}
 
