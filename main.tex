@@ -200,15 +200,15 @@ To understand how resolution degrades as the evaluation budget shrinks, we subsa
 
 \subsection{Statistical Tests}
 
-\textbf{Trend test.} Spearman $\rho_{\text{trend}}=-0.091$ ($p=0.803$). No monotonic trend.
+\textbf{Trend test (few-shot protocol).} Spearman $\rho_{\text{trend}}=-0.091$ ($p=0.803$). No monotonic trend.
 
-\textbf{Adjacent comparison test.} Two-proportion $z$-tests for adjacent pairs show no significant differences under any standard correction: the smallest $p$ is $0.161$ (Bonferroni threshold $\alpha' = 0.05/9 \approx 0.0056$). (Full table in Appendix~\ref{app:adjacent}.) This adjacent-pair correction addresses a different comparison family from the all-pairwise correction (Implication~2); the two answer whether any step-to-step change is significant versus whether any two checkpoints are distinguishable.
+\textbf{Adjacent comparison test (few-shot protocol).} Two-proportion $z$-tests for adjacent pairs show no significant differences under any standard correction: the smallest $p$ is $0.161$ (Bonferroni threshold $\alpha' = 0.05/9 \approx 0.0056$). (Full table in Appendix~\ref{app:adjacent}.) This adjacent-pair correction addresses a different comparison family from the all-pairwise correction (Implication~2); the two answer whether any step-to-step change is significant versus whether any two checkpoints are distinguishable.
 
-\textbf{Range test.} Best (step~150, $55.5\%$) vs.\ worst (step~50, $47.5\%$): $z=1.60$, $p=0.109$.
+\textbf{Range test (few-shot protocol).} Best (step~150, $55.5\%$) vs.\ worst (step~50, $47.5\%$): $z=1.60$, $p=0.109$.
 
-\textbf{Paired comparison (McNemar).} All nine adjacent comparisons are non-significant (smallest $p=0.265$). Best-vs-worst: $p=0.091$.
+\textbf{Paired comparison (training-format protocol).} All nine adjacent comparisons under the training-format evaluation are non-significant (smallest $p=0.265$). Best-vs-worst: $p=0.091$.
 
-\textbf{Bootstrap ranking stability.} We performed 10,000 nonparametric bootstrap resamples of the 200 evaluation examples (preserving paired structure). The most frequently selected checkpoint (step~100, $52.0\%$) is chosen in only $44.0\%$ of replicates (Figure~\ref{fig:bootstrap}; normalized entropy $0.717$). The identity of the empirically best model depends largely on which evaluation examples are observed.
+\textbf{Bootstrap ranking stability (training-format protocol).} We performed 10,000 nonparametric bootstrap resamples of the 200 evaluation examples (preserving paired structure), using the training-format evaluation. The most frequently selected checkpoint (step~100, $52.0\%$) is chosen in only $44.0\%$ of replicates (Figure~\ref{fig:bootstrap}; normalized entropy $0.717$). The identity of the empirically best model depends largely on which evaluation examples are observed.
 
 Does $44.0\%$ selection probability, $4.4\times$ the uniform baseline of $10\%$, indicate weak signal or pure noise? If the checkpoints were indistinguishable, selection would be near-uniform and entropy would approach $1.0$. The observed entropy is $0.717$, well below $1.0$, so some concentration exists. But $44.0\%$ is far from reliable selection, which would require $\gtrsim90\%$. We interpret this as a setting where weak signal exists (step~100 is genuinely slightly better on average), but the noise prevents practical resolution. The $\Delta_{\min}$ framework captures this: the observed range of $8.0$~pp falls below the detection threshold of $9.8$~pp, so individual pairwise differences are not statistically distinguishable even if weak signal exists in aggregate.
 
@@ -657,7 +657,7 @@ Table~\ref{tab:adjacent} reports the full two-proportion $z$-tests for adjacent 
 
 \begin{table}[h]
 \centering
-\caption{Adjacent two-proportion $z$-tests.}
+\caption{Adjacent two-proportion $z$-tests (few-shot protocol, $N=200$).}
 \label{tab:adjacent}
 \begin{tabular}{lccc}\toprule
 \textbf{Pair} & $\Delta$ & $z$ & $p$ \\\midrule
