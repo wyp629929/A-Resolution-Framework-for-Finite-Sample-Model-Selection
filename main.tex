@@ -319,7 +319,7 @@ The search query ``LoRA'' OR ``fine-tuning'' combined with a named benchmark (GS
 
 \subsection{Results}
 
-None of the 50 surveyed papers report the maximum generation length used during evaluation. A few state that they used greedy decoding or ``default'' generation settings, but none specify the token budget. The 95\% Wilson confidence interval for this proportion is [$0\%$, $7.1\%$]. This gap is consistent with the hypothesis that the evaluation pipeline---including the decoding configuration---is treated as an interchangeable constant across comparisons, when in fact a single unreported parameter can reverse the resolvability verdict.
+None of the 50 surveyed papers report the maximum generation length used during evaluation. A few state that they used greedy decoding or ``default'' generation settings, but none specify the token budget. The 95\% Wilson confidence interval for this proportion is [$0\%$, $7.1\%$] (computed under simple random sampling; the convenience sample design means this should be read as a descriptive lower bound rather than a precise population estimate). This gap is consistent with the hypothesis that the evaluation pipeline---including the decoding configuration---is treated as an interchangeable constant across comparisons, when in fact a single unreported parameter can reverse the resolvability verdict.
 
 % ============================================================
 
@@ -378,6 +378,8 @@ The effect is substantial. At $128$~tokens the observed range is $5.5$~pp and th
 The $256$-token data also reveal a finding that the $128$-token evaluation entirely concealed: seeds~43 and~44 show statistically significant negative trends under the longer generation limit (Spearman $\rho=-0.77$, $p=0.009$ and $\rho=-0.63$, $p=0.050$), with the earliest checkpoint (step~50) outperforming the final checkpoint by $12.5$~pp and $10.5$~pp respectively. This is evidence of overfitting after an initial learning phase---a pattern invisible when the model's output is truncated. Seed~42 does not share this trend ($\rho=+0.29$, $p=0.43$), confirming that protocol sensitivity and overfitting susceptibility are trajectory-specific. All $256$-token checkpoints are reported in Appendix~\ref{tab:seed_rep}.
 
 The $\Delta_{\min}$ comparisons in this section use the $256$-token evaluation for Qwen and the $256$-token evaluation for Mistral; the earlier $128$-token results (Tables~\ref{tab:trajectory},~\ref{tab:seed_rep}) are retained for comparability with published work.
+
+We note that the choice of $256$~tokens is itself a protocol decision, not a theoretically privileged value. Any finite generation length may truncate some outputs, and the convergence of accuracy as tokens increase---rather than the choice of a specific threshold---is the relevant diagnostic. In our data, increasing from $128$ to $256$~tokens substantially changes all accuracy values and rankings; a further increase to $512$~tokens (verified on one checkpoint) leaves accuracies unchanged, confirming that $256$~tokens saturates the task's generation requirement. A practitioner applying $\Delta_{\min}$ should similarly verify that their chosen generation length does not truncate the model's output, and should test sensitivity to this parameter when the budget allows.
 
 \subsection{General Applicability}
 
