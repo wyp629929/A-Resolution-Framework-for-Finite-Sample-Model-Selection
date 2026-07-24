@@ -1,0 +1,6 @@
+dataset,source,n_papers,reports_max_new_tokens
+GSM8K (full and subset),arXiv cs.CL/cs.LG (2024-2026),50,0
+MMLU (full and subset),arXiv cs.CL/cs.LG (2024-2026),50,0
+HumanEval,arXiv cs.CL/cs.LG (2024-2026),50,0
+ARC-Challenge,arXiv cs.CL/cs.LG (2024-2026),50,0
+HellaSwag,arXiv cs.CL/cs.LG (2024-2026),50,0
