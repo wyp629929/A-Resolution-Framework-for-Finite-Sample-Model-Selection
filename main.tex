@@ -28,7 +28,7 @@
 \affil{Department of Statistics, Rutgers University, Piscataway, NJ, USA}
 \email{yw1580@scarletmail.rutgers.edu}
 
-\abstract{Model selection routinely compares candidates on finite validation sets, yet the resolution of those comparisons depends not only on the evaluation budget $N$ but on evaluation protocol details---generation length, prompt format, decoding parameters---that are almost never reported. This paper proposes $\Delta_{\min}$, a resolution threshold derived from classical power analysis, as a pre-experimental diagnostic that determines whether an evaluation budget can support statistically distinguishable comparisons. We validate the framework through controlled LoRA fine-tuning experiments (Qwen2.5-7B and Mistral-7B) and show that a seemingly innocuous parameter---the maximum generation length---can shift the observed accuracy range by a factor of $2.3\times$, reversing the resolvability verdict across all three training seeds and, critically, revealing a strong overfitting trend ($\rho=-0.77$, $p=0.009$) that was completely hidden under the shorter generation limit. The between-checkpoint standard deviation more than doubles when the token limit is relaxed. The sensitivity of the $\Delta_{\min}$ verdict to protocol choices means that no resolution claim is interpretable unless the evaluation pipeline is fully specified; a survey of 50 recent fine-tuning papers finds that none report the maximum generation length that our experiments show can flip the classification ($95\%$ CI: $[0\%, 7.1\%]$). Bootstrap analysis, Monte Carlo power calibration, an extension to continuous metrics via the Delta method, a catalogue of nine diagnostic pitfalls, and a practitioner quick-reference table accompany the framework.}
+\abstract{A single decoding parameter---the maximum generation length---can reverse whether a set of model checkpoints is classified as distinguishable or indistinguishable, and can conceal a statistically significant overfitting trend ($\rho=-0.77$, $p=0.009$) behind a facade of flat performance. We document this through controlled LoRA fine-tuning experiments (Qwen2.5-7B, Mistral-7B) in which increasing the generation length from $128$ to $256$~tokens shifts observed accuracy ranges by $2.3\times$, flips resolvability verdicts, and reveals that the earliest checkpoint is systematically best---a pattern invisible under the shorter limit. The mechanism is truncated chain-of-thought reasoning: a short generation limit compresses between-checkpoint variance, manufacturing false negatives for the $\Delta_{\min}$ diagnostic (a resolution threshold derived from classical power analysis). We survey 50 recent fine-tuning papers and find that none report the generation length parameter that we show can determine the verdict. The protocol sensitivity of evaluation resolution means that no model comparison claim is interpretable unless the evaluation pipeline is fully specified. A catalogue of nine diagnostic pitfalls encountered during our own research process, a practitioner quick-reference table for $\Delta_{\min}$, and a continuous-metric extension via the Delta method accompany the analysis.}
 
 \keywords{Model selection, evaluation budget, statistical resolution, statistical power, $\Delta_{\min}$, evaluation methodology, reproducibility}
 
@@ -41,7 +41,7 @@ Model selection across data science and machine learning follows a default rule:
 
 We argue that it is the latter. Model ranking is constrained by the evaluation budget, much as any statistical estimator is constrained by sample size. Existing comparison tools---paired $t$-tests~\citep{dietterich1998approximate}, significance guidelines~\citep{dror2018hitchhiker}, post-selection inference~\citep{zrnic2024flexible,zhang2024winners}---are post-hoc: they assess results after evaluation is complete. What is missing is a \emph{pre-experimental diagnostic} that determines, before resources are invested, whether the evaluation budget can support statistically distinguishable comparisons.
 
-This paper proposes such a diagnostic. It centers on $\Delta_{\min}$, a resolution threshold derived from the two-proportion $z$-test~\citep{cohen1988statistical}. The threshold itself is a textbook formula. The contribution is the framework built around it: a decision rule (Decision Rule~1) that formalizes when to use argmax versus model averaging, a calibration procedure via bootstrap and power-curve simulation, empirical validation across two model families and multiple training paradigms, a catalog of diagnostic pitfalls encountered during the research process, and a literature survey documenting that none of 50 recent fine-tuning papers report the generation length parameter that determines whether those thresholds are exceeded. The paper identifies and quantifies a systematic mismatch: empirical machine learning routinely operates at evaluation budgets where the resolution is insufficient to support the comparisons being drawn, and the evaluation protocols themselves are reported incompletely enough that the verdict cannot be independently assessed.
+This paper proposes such a diagnostic and, in applying it, uncovers a finding that is arguably more consequential than the diagnostic itself. The diagnostic---$\Delta_{\min}$, a resolution threshold derived from the two-proportion $z$-test~\citep{cohen1988statistical}---is a textbook formula. What its application reveals is that the verdict it produces can be reversed by a single decoding parameter (maximum generation length) that almost nobody reports. Experiments across multiple seeds and two model families show that a short generation limit compresses between-checkpoint variance, manufacturing the appearance of indistinguishability, concealing genuine overfitting trends, and inverting the identity of the empirically best checkpoint. We document nine diagnostic pitfalls encountered during the research process itself, and show that the problem of underpowered evaluation is compounded by a problem of unaccountable evaluation: if the pipeline that produced the numbers is incompletely specified, the resolution of those numbers cannot be independently assessed.
 
 \subsection*{Contributions}
 
@@ -107,13 +107,11 @@ Given a held-out set of size $N$, a pair of models with observed accuracies $\ha
 
 \subsection{Theoretical Characterization}
 
-\textbf{Proposition 1 (Ranking instability).} \emph{Consider $m$ candidates with true accuracies $p_1,\dots,p_m$, sorted $p_{(1)}\geq p_{(2)}\geq\cdots\geq p_{(m)}$, gap $\delta=p_{(1)}-p_{(2)}>0$. For empirical accuracies $\hat p_i$ from $N$ i.i.d.\ samples each:}
-\[
-P(\arg\max_i \hat p_i = \arg\max_i p_i) \geq 1 - (m-1)\exp\!\left(-\frac{\delta^2 N}{8\bar{p}(1-\bar{p})}\right),
-\]
-\noindent where $\bar{p}$ is the mean accuracy (Bernstein's inequality with the union bound). When $\delta\ll\sqrt{\bar{p}(1-\bar{p})/N}$, the bound is near zero; when $\delta\gg\Delta_{\min}$, it converges exponentially to~1. (Proof in Appendix~\ref{app:proof}.)
+\textbf{Scaling laws for ranking resolution.} The $\Delta_{\min}$ formula (Eq.~\ref{eq:delta_min}) captures two fundamental scaling relationships that govern when checkpoint ranking is reliable.
 
-\noindent\textbf{Where the bound is informative.} The right-hand side is positive only when $\delta > \sqrt{8\bar{p}(1-\bar{p})\log(m-1)/N}$. At $\bar{p}=0.5$ and $m=10$ this requires $\delta>14.8$~pp at $N=200$ and $\delta>5.8$~pp at $N=1319$---in both cases above the ranges we observe. Proposition~1 should therefore be read as characterizing the \emph{scaling regime} that governs when checkpoint ranking becomes reliable, and not as certifying selection reliability in our own experiments. Concentration bounds of this form are loose by construction; the direct empirical evidence for instability at our budgets comes from the bootstrap analysis in \S\ref{sec:primary} and the Monte Carlo calibration in \S\ref{sec:power}, both of which measure selection behaviour rather than bounding it.
+\noindent\textbf{Budget scaling (Implication 1).} $N \propto 1/\delta^2$: halving the minimum detectable gap requires quadrupling the evaluation budget. This follows directly from the $z$-test statistic: the standard error of a proportion scales as $\sqrt{\bar{p}(1-\bar{p})/N}$, so the detectable effect scales as $1/\sqrt{N}$.
+
+\noindent\textbf{Multiple comparison scaling (Implication 2).} When selecting the best from $m$ candidates, the relevant threshold tightens to $\Delta_{\min}^{(m)} \approx z_{\alpha/2m}\sqrt{2\bar{p}(1-\bar{p})/N}$, which scales as $\sqrt{\log m}$ under the Bonferroni correction (Proof in Appendix~\ref{app:proof}). For $m=10$ at $N=200$, $\Delta_{\min}^{(10)}\approx 14.0$~pp (Bonferroni-corrected $\alpha=0.005$).\footnote{The numerical coincidence that the $80\%$-power pairwise threshold also equals $14.0$~pp at $N=200$ is incidental; the two values arise from different corrections (one for power, one for multiplicity).} Because checkpoint accuracies are positively correlated (adjacent steps differ by small amounts), Bonferroni is conservative. Alternative procedures that account for correlation, such as Holm-Bonferroni step-down, Benjamini-Hochberg false discovery rate control, or max-t adjustment via bootstrap, would yield tighter thresholds. We report Bonferroni as a strict upper bound throughout.
 
 \textbf{Implication 1 (Budget scaling).} $N\propto 1/\delta^2$: halving the detectable gap requires quadrupling $N$.
 
@@ -290,19 +288,19 @@ Table~\ref{tab:all_settings} collects every experimental setting reported in \S\
 \label{tab:all_settings}
 \footnotesize
 \setlength{\tabcolsep}{4pt}
-\begin{tabular}{llcrrrl}\toprule
-\textbf{\S} & \textbf{Setting} & \textbf{Protocol} & $\bm{N}$ & \textbf{Range} & $\bm{\Delta_{\min}}$ & \textbf{Verdict} \\\midrule
-\ref{sec:full_budget} & Qwen2.5-7B LoRA, GSM8K full & training & 1319 & 3.0 & 3.8 & Not resolvable \\
-\ref{sec:budget_degradation} & Qwen2.5-7B LoRA, GSM8K sub. & few-shot & 200 & 8.0 & 9.8 & Not resolvable \\
-\ref{sec:budget_degradation} & Qwen2.5-7B LoRA, seed 42 (128~tok) & training & 200 & 5.5 & 9.8 & Not resolvable \\
-\ref{sec:seeds} & Qwen2.5-7B LoRA, seed 42 (256~tok) & training & 200 & 12.5 & 9.7 & Resolvable \\
-\ref{sec:seeds} & Qwen2.5-7B LoRA, seed 43 (256~tok) & training & 200 & 14.0 & 9.1 & Resolvable \\
-\ref{sec:seeds} & Qwen2.5-7B LoRA, seed 44 (256~tok) & training & 200 & 13.5 & 9.1 & Resolvable \\
-\ref{sec:small_scale} & Qwen2.5-1.5B LoRA & zero-shot & 200 & 3.5 & 3.4 & \emph{Diagnostic invalid} \\
-\ref{sec:full_ft} & Qwen2.5-1.5B full fine-tune & training & 200 & 6.0 & 9.4 & Not resolvable \\
-\ref{sec:mistral} & Mistral-7B LoRA & training & 200 & 11.0 & 8.8 & \textbf{Resolvable} \\
-\ref{sec:mmlu} & Qwen2.5-7B, MMLU (5 subdomains) & --- & $\approx$250 & 6.4 & 8.8 & Not resolvable \\
-\ref{sec:mnist} & MNIST random forest & --- & 5000 & --- & 1.4 & See Table~\ref{tab:mnist} \\
+\begin{tabular}{llcrrrrl}\toprule
+\textbf{\S} & \textbf{Setting} & \textbf{Protocol} & $\bm{N}$ & \textbf{Range} & $\bm{\Delta_{\min}^{\text{(indep)}}}$ & $\bm{\Delta_{\min}^{\text{(paired)}}}$ & \textbf{Verdict} \\\midrule
+\ref{sec:full_budget} & Qwen2.5-7B LoRA, GSM8K full & training & 1319 & 3.0 & 3.8 & 2.9--3.5 & Not resolvable \\
+\ref{sec:budget_degradation} & Qwen2.5-7B LoRA, GSM8K sub. & few-shot & 200 & 8.0 & 9.8 & --- & Not resolvable \\
+\ref{sec:budget_degradation} & Qwen2.5-7B LoRA, seed 42 (128~tok) & training & 200 & 5.5 & 9.8 & 8.7--9.3 & Not resolvable \\
+\ref{sec:seeds} & Qwen2.5-7B LoRA, seed 42 (256~tok) & training & 200 & 12.5 & 9.7 & 8.7--9.3 & Resolvable \\
+\ref{sec:seeds} & Qwen2.5-7B LoRA, seed 43 (256~tok) & training & 200 & 14.0 & 9.1 & --- & Resolvable \\
+\ref{sec:seeds} & Qwen2.5-7B LoRA, seed 44 (256~tok) & training & 200 & 13.5 & 9.1 & --- & Resolvable \\
+\ref{sec:small_scale} & Qwen2.5-1.5B LoRA & zero-shot & 200 & 3.5 & 3.4 & --- & \emph{Diagnostic invalid} \\
+\ref{sec:full_ft} & Qwen2.5-1.5B full fine-tune & training & 200 & 6.0 & 9.4 & --- & Not resolvable \\
+\ref{sec:mistral} & Mistral-7B LoRA & training & 200 & 11.0 & 8.8 & 7.2--7.9 & \textbf{Resolvable} \\
+\ref{sec:mmlu} & Qwen2.5-7B, MMLU (5 subdomains) & --- & $\approx$250 & 6.4 & 8.8 & --- & Not resolvable \\
+\ref{sec:mnist} & MNIST random forest & --- & 5000 & --- & 1.4 & 1.1--1.3 & See Table~\ref{tab:mnist} \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -379,7 +377,7 @@ The $256$-token data also reveal a finding that the $128$-token evaluation entir
 
 The $\Delta_{\min}$ comparisons in this section use the $256$-token evaluation for Qwen and the $256$-token evaluation for Mistral; the earlier $128$-token results (Tables~\ref{tab:trajectory},~\ref{tab:seed_rep}) are retained for comparability with published work.
 
-We note that the choice of $256$~tokens is itself a protocol decision, not a theoretically privileged value. Any finite generation length may truncate some outputs, and the convergence of accuracy as tokens increase---rather than the choice of a specific threshold---is the relevant diagnostic. In our data, increasing from $128$ to $256$~tokens substantially changes all accuracy values and rankings; a further increase to $512$~tokens (verified on one checkpoint) leaves accuracies unchanged, confirming that $256$~tokens saturates the task's generation requirement. A practitioner applying $\Delta_{\min}$ should similarly verify that their chosen generation length does not truncate the model's output, and should test sensitivity to this parameter when the budget allows.
+We note that the choice of $256$~tokens is itself a protocol decision, not a theoretically privileged value. This is a genuine limitation of the present analysis: we can show that verdicts change with protocol choices, but we cannot certify any particular protocol as uniquely correct. What we can provide is evidence of convergence: increasing from $128$ to $256$~tokens substantially changes all accuracy values and rankings; a further increase to $512$~tokens (verified on one checkpoint) leaves accuracies unchanged. The $256$-token setting saturates the task's generation requirement. A practitioner applying $\Delta_{\min}$ should similarly verify that their chosen generation length does not truncate the model's output, and should test sensitivity to this parameter when the budget allows. The self-limiting nature of this conclusion---that the diagnostic cannot certify its own inputs---is a property of the problem, not of this particular analysis: any resolution diagnostic must condition on an evaluation protocol, and the protocol choice remains a judgment call.
 
 \subsection{General Applicability}
 
@@ -471,30 +469,23 @@ We proposed and validated $\Delta_{\min}$ as a pre-flight diagnostic for model s
 
 The central finding is that the resolution of a comparison depends not only on $N$ but on the evaluation protocol itself. In controlled LoRA fine-tuning experiments, a single decoding parameter---the maximum generation length---shifted the observed accuracy range by $2.3\times$ (from $5.5$~pp to $12.5$~pp at $N=200$), reversed the resolvability verdict across all three training seeds, and inverted the identity of the empirically best checkpoint. The between-checkpoint standard deviation more than doubled when the token limit was relaxed, because shorter generation truncates chain-of-thought reasoning and compresses across-checkpoint variance. A consequence is that $\Delta_{\min}$'s ``not resolvable'' verdict can arise from an evaluation pipeline that suppresses signal, rather than from genuinely indistinguishable candidates.
 
-The protocol-dependent nature of the observed range carries a practical implication: no resolution claim is interpretable unless the evaluation pipeline---including decoding parameters---is fully specified. A survey of 50 recent fine-tuning papers finds that none report the maximum generation length that our experiments show can reverse the verdict ($95\%$ CI: $[0\%, 7.1\%]$). The problem of underpowered evaluation is therefore compounded by a problem of unaccountable evaluation. We recommend that $\Delta_{\min}$ computation and full pipeline specification become standard submission requirements for any benchmark evaluation. The quick-reference table (Table~\ref{tab:delta_min}), power-curve calibration (Figure~\ref{fig:power_curve}), and diagnostic pitfall catalog (Section~\ref{sec:pitfalls}) are intended as actionable resources for practitioners and reviewers alike.
+The protocol-dependent nature of the observed range carries a practical implication: if the evaluation pipeline is incompletely specified, the verdict of any resolution diagnostic is unverifiable. A survey of 50 recent fine-tuning papers suggests that this incompleteness is the norm---none of the papers surveyed report the maximum generation length that our experiments show can determine the verdict. The problem of underpowered evaluation is therefore compounded by a problem of unaccountable evaluation. We recommend that $\Delta_{\min}$ computation and full pipeline specification become standard submission requirements for any benchmark evaluation. The quick-reference table (Table~\ref{tab:delta_min}), power-curve calibration (Figure~\ref{fig:power_curve}), and diagnostic pitfall catalog (Section~\ref{sec:pitfalls}) are intended as actionable resources for practitioners and reviewers alike.
 
 % ============================================================
 \appendix
 % ============================================================
 
-\section{Proof of Proposition 1}\label{app:proof}
+\section{Multiple Comparison Correction}\label{app:proof}
 
-For two models with accuracies $p$ and $p+\delta$ ($\delta>0$), let $\hat p$, $\hat p+\hat\delta$ be their empirical estimates from $N$ i.i.d.\ Bernoulli samples. The probability that the lower-accuracy model is incorrectly selected is $P(\hat\delta < 0)$.
-
-By Bernstein's inequality for bounded random variables, applied to the difference $D_i = X_i - Y_i$ where $X_i\sim\text{Bern}(p+\delta)$ and $Y_i\sim\text{Bern}(p)$ are the per-sample correctness indicators:
+The Bonferroni correction for $m$ comparisons sets the per-comparison significance level to $\alpha' = \alpha / m$. For the two-proportion $z$-test, the minimum detectable effect at level $\alpha'$ is:
 \[
-P(\hat\delta < 0) \leq \exp\!\left(-\frac{N\bar\delta^2}{2\sigma^2 + 2M\bar\delta/3}\right),
+\Delta_{\min}^{(m)} = z_{\alpha/2m} \cdot \sqrt{\frac{2\bar{p}(1-\bar{p})}{N}}.
 \]
-where $\bar\delta = \delta$ (the true gap), $\sigma^2 = \text{Var}(D_i)$, and $M=2$ (the range of $D_i$). Since $\sigma^2 \leq 2\bar{p}(1-\bar{p})$, this simplifies to:
+For $m=10$, $\alpha=0.05$, and $\bar{p}=0.5$ at $N=200$:
 \[
-P(\hat\delta < 0) \leq \exp\!\left(-\frac{\delta^2 N}{4\bar{p}(1-\bar{p}) + 4\delta/3}\right).
+\Delta_{\min}^{(10)} = z_{0.0025} \cdot \sqrt{\frac{2 \cdot 0.5 \cdot 0.5}{200}} \approx 2.807 \cdot 0.05 = 0.1403 \approx 14.0\ \text{pp}.
 \]
-For the small $\delta$ regime relevant to our setting ($\delta \leq \frac{2}{3}\bar{p}(1-\bar{p})$), the term $4\delta/3 \leq \frac{8}{9}\bar{p}(1-\bar{p}) < 4\bar{p}(1-\bar{p})$, so the denominator is at most $8\bar{p}(1-\bar{p})$. This condition holds for all primary experiments: at $\bar{p}=0.5$, the threshold is $0.167$, and all observed adjacent gaps are below $0.07$. This gives the looser but simpler bound:
-\[
-P(\hat\delta < 0) \leq \exp\!\left(-\frac{\delta^2 N}{8\bar{p}(1-\bar{p})}\right).
-\]
-
-For $m$ candidate models, the probability of correctly identifying the best model is at least $1 - \sum_{i=2}^m P(\hat\delta_i < 0) \geq 1 - (m-1)\exp(-\delta^2 N / 8\bar{p}(1-\bar{p}))$ by the union bound. Setting this bound to be non-trivial ($>0$) requires $\delta = \Omega(\sqrt{\bar{p}(1-\bar{p})\log m / N})$, matching the $\Delta_{\min}$ scaling with the $\log m$ penalty for multiple comparisons.
+This correction is conservative when candidates are positively correlated, as adjacent checkpoints are. Holm-Bonferroni step-down correction and Benjamini-Hochberg false discovery rate control would produce tighter thresholds; we report Bonferroni as a strict upper bound throughout.
 
 \section{Proof of Decision Rule 1}\label{app:rule_proof}
 
