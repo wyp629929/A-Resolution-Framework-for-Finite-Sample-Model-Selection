@@ -17,6 +17,7 @@ sn-article-template/
 supplementary.zip
 *.bak
 *.bak.*
+*.pdf
 *.bbl
 *.blg
 *.py
